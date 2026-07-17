@@ -1,0 +1,23 @@
+{
+  "SessionEnd": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/hooks/session-end-resume.sh 2>/dev/null || true"
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "startup",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/hooks/session-start-resume.sh 2>/dev/null || true"
+        }
+      ]
+    }
+  ]
+}

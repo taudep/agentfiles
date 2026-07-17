@@ -1,0 +1,520 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "click",
+#     "questionary",
+#     "rich",
+# ]
+# ///
+
+"""Install Claude skills from GitHub or a local directory into ~/.claude/skills/, and keep remote ones updated."""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import click
+import questionary
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+console = Console()
+
+DEFAULT_BROWSE_URL = (
+    "https://github.com/taudep/-tools/tree/master"
+)
+
+METADATA_FILENAME = ".install-skill.json"
+
+GITHUB_URL_RE = re.compile(
+    r"https://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)"
+    r"/tree/(?P<branch>[^/]+)/(?P<path>.+)"
+)
+
+
+def parse_github_url(url: str) -> tuple[str, str, str, str]:
+    """Return (owner, repo, branch, path) from a GitHub tree URL."""
+    m = GITHUB_URL_RE.match(url.rstrip("/"))
+    if not m:
+        raise click.BadParameter(
+            "Expected a GitHub tree URL like "
+            "https://github.com/owner/repo/tree/branch/path/to/skill"
+        )
+    return m.group("owner"), m.group("repo"), m.group("branch"), m.group("path")
+
+
+def gh_api(endpoint: str) -> dict | list:
+    """Call the GitHub API via gh CLI (uses keyring auth, bypasses GITHUB_TOKEN env)."""
+    result = subprocess.run(
+        ["gh", "api", endpoint],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GITHUB_TOKEN": "", "GH_TOKEN": ""},
+    )
+    if result.returncode != 0:
+        raise click.ClickException(f"gh api error [{endpoint}]: {result.stderr.strip()}")
+    return json.loads(result.stdout)
+
+
+def fetch_tree(owner: str, repo: str, branch: str) -> list[dict]:
+    data = gh_api(f"repos/{owner}/{repo}/git/trees/{branch}?recursive=1")
+    if data.get("truncated"):
+        console.print("[yellow]Warning: tree truncated — some files may be missing.[/yellow]")
+    return data["tree"]
+
+
+def list_skill_dirs(tree: list[dict], prefix: str) -> list[str]:
+    """Return sorted immediate child directory names under prefix."""
+    prefix = prefix.rstrip("/") + "/"
+    dirs: set[str] = set()
+    for entry in tree:
+        if entry["path"].startswith(prefix):
+            rest = entry["path"][len(prefix):]
+            parts = rest.split("/")
+            if len(parts) > 1:
+                dirs.add(parts[0])
+    return sorted(dirs)
+
+
+def fetch_skill_files(owner: str, repo: str, path: str, branch: str) -> list[tuple[str, str]]:
+    """Return [(repo_path, blob_sha), ...] for all files under path via Contents API.
+
+    Uses the Contents API (not the git tree API) to avoid truncation on large repos.
+    Recurses into subdirectories automatically.
+    """
+    entries = gh_api(f"repos/{owner}/{repo}/contents/{path}?ref={branch}")
+    if isinstance(entries, dict):
+        entries = [entries]
+    files: list[tuple[str, str]] = []
+    for entry in entries:
+        if entry["type"] == "file":
+            files.append((entry["path"], entry["sha"]))
+        elif entry["type"] == "dir":
+            files.extend(fetch_skill_files(owner, repo, entry["path"], branch))
+    return files
+
+
+def download_blob(owner: str, repo: str, sha: str) -> bytes:
+    result = subprocess.run(
+        ["gh", "api", f"repos/{owner}/{repo}/git/blobs/{sha}",
+         "--header", "Accept: application/vnd.github.raw+json"],
+        capture_output=True,
+        env={**os.environ, "GITHUB_TOKEN": "", "GH_TOKEN": ""},
+    )
+    if result.returncode != 0:
+        raise click.ClickException(f"gh api blob error: {result.stderr.strip()}")
+    return result.stdout
+
+
+def get_skill_last_commit(owner: str, repo: str, branch: str, path: str) -> datetime | None:
+    """Return the committer date of the most recent commit touching path, or None."""
+    commits = gh_api(f"repos/{owner}/{repo}/commits?path={path}&sha={branch}&per_page=1")
+    if isinstance(commits, list) and commits:
+        date_str = commits[0]["commit"]["committer"]["date"]
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    return None
+
+
+def get_local_skill_mtime(base_dir: Path, skill_name: str) -> datetime | None:
+    """Return the most recent file mtime in the local skill dir as UTC-aware datetime."""
+    skill_dir = base_dir / skill_name
+    mtimes = [f.stat().st_mtime for f in skill_dir.rglob("*") if f.is_file()]
+    return datetime.fromtimestamp(max(mtimes), tz=timezone.utc) if mtimes else None
+
+
+def write_metadata(dest: Path, owner: str, repo: str, branch: str, path: str) -> None:
+    """Record where a remote-installed skill came from, so `update` can find it later."""
+    meta = {
+        "source": "remote",
+        "owner": owner,
+        "repo": repo,
+        "branch": branch,
+        "path": path,
+        "installed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (dest / METADATA_FILENAME).write_text(json.dumps(meta, indent=2) + "\n")
+
+
+def read_metadata(dest: Path) -> dict | None:
+    meta_file = dest / METADATA_FILENAME
+    if not meta_file.exists():
+        return None
+    try:
+        return json.loads(meta_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def pick_skills(items: list[str], installed: set[str], needs_update: dict[str, str]) -> list[str]:
+    """Multi-select picker — fzf if available, questionary otherwise.
+
+    Already-installed skills are visually marked in the picker.
+    """
+    INSTALLED_SUFFIX = "  ✓"
+
+    if shutil.which("fzf"):
+        GREEN, YELLOW, RESET = "\033[32m", "\033[33m", "\033[0m"
+        lines = []
+        for s in items:
+            if s in needs_update:
+                lines.append(f"{YELLOW}⚠️  {s}{INSTALLED_SUFFIX}  ({needs_update[s]}){RESET}")
+            elif s in installed:
+                lines.append(f"{GREEN}{s}{INSTALLED_SUFFIX}{RESET}")
+            else:
+                lines.append(s)
+        result = subprocess.run(
+            ["fzf", "--multi", "--ansi",
+             "--prompt", "Select skills to install (TAB = multi-select): "],
+            input="\n".join(lines),
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return []
+        selected = []
+        for line in result.stdout.splitlines():
+            plain = re.sub(r"\033\[[0-9;]*m", "", line).strip()
+            for item in items:
+                if item in plain:
+                    selected.append(item)
+                    break
+        return selected
+
+    choices = []
+    for s in items:
+        if s in needs_update:
+            choices.append(questionary.Choice(
+                title=questionary.Style([("fg:ansiyellow", f"⚠️  {s}{INSTALLED_SUFFIX}  ({needs_update[s]})")]),
+                value=s,
+            ))
+        elif s in installed:
+            choices.append(questionary.Choice(
+                title=questionary.Style([("fg:ansigreen", s + INSTALLED_SUFFIX)]),
+                value=s,
+            ))
+        else:
+            choices.append(questionary.Choice(title=s, value=s))
+    selected = questionary.checkbox(
+        "Select skills to install (SPACE to select, ENTER to confirm):",
+        choices=choices,
+    ).ask()
+    return selected or []
+
+
+def resolve_skills_dir(skills_dir: str | None) -> Path:
+    if skills_dir:
+        return Path(skills_dir).expanduser()
+    return Path.home() / ".claude" / "skills"
+
+
+def remove_existing(dest: Path) -> None:
+    if dest.is_symlink() or dest.is_file():
+        dest.unlink()
+    elif dest.is_dir():
+        shutil.rmtree(dest)
+
+
+def install_skill(
+    owner: str,
+    repo: str,
+    branch: str,
+    path: str,
+    dest: Path,
+    force: bool,
+    dry_run: bool,
+) -> None:
+    """Download and write one remote skill to dest."""
+    if dest.exists() and not force and not dry_run:
+        if not click.confirm(f"'{dest.name}' already exists. Overwrite?"):
+            console.print(f"Skipped {dest.name}.")
+            return
+
+    skill_files = fetch_skill_files(owner, repo, path, branch)
+    if not skill_files:
+        console.print(f"[red]No files found at:[/red] {path}")
+        return
+
+    prefix = path.rstrip("/") + "/"
+    files: list[tuple[Path, bytes]] = []
+    for repo_path, sha in skill_files:
+        rel = repo_path[len(prefix):]
+        content = download_blob(owner, repo, sha)
+        files.append((Path(rel), content))
+
+    if dry_run:
+        console.print(f"\n[bold]Dry run — {dest.name}:[/bold]")
+        for rel, data in files:
+            console.print(f"  {dest / rel}  ({len(data):,} bytes)")
+        return
+
+    remove_existing(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    for rel, data in files:
+        target = dest / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+    write_metadata(dest, owner, repo, branch, path)
+
+    console.print(f"[green]✓[/green] {dest.name}  ({len(files)} files)")
+
+
+def install_local_skill(source: Path, dest: Path, force: bool, dry_run: bool) -> None:
+    """Symlink a local skill directory into dest instead of downloading."""
+    if not source.is_dir():
+        console.print(f"[red]Not a directory:[/red] {source}")
+        return
+
+    if (dest.exists() or dest.is_symlink()) and not force and not dry_run:
+        if not click.confirm(f"'{dest.name}' already exists. Overwrite?"):
+            console.print(f"Skipped {dest.name}.")
+            return
+
+    if dry_run:
+        console.print(f"\n[bold]Dry run — {dest.name}:[/bold]")
+        console.print(f"  symlink {dest} -> {source}")
+        return
+
+    if dest.exists() or dest.is_symlink():
+        remove_existing(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.symlink_to(source, target_is_directory=True)
+
+    console.print(f"[green]✓[/green] {dest.name}  (symlink → {source})")
+
+
+def installed_skill_names(base_dir: Path) -> list[str]:
+    if not base_dir.exists():
+        return []
+    return sorted(p.name for p in base_dir.iterdir() if p.is_dir() or p.is_symlink())
+
+
+@click.group(invoke_without_command=True)
+@click.option(
+    "--url", "skill_url", default=None,
+    help="Install a single skill directly from its GitHub URL.",
+)
+@click.option(
+    "--local", "local_path", default=None, metavar="PATH",
+    help="Install a skill by symlinking a local directory instead of downloading.",
+)
+@click.option(
+    "--browse", default=None, metavar="GITHUB_URL",
+    help=(
+        "GitHub folder URL to browse with fzf instead of the default.\n"
+        f"[default: {DEFAULT_BROWSE_URL}]"
+    ),
+)
+@click.option(
+    "--skills-dir", default=None,
+    help="Local directory where skills are installed.  [default: ~/.claude/skills]",
+)
+@click.option("--name", default=None, help="Override skill name (single --url/--local install only).")
+@click.option("--force", is_flag=True, help="Overwrite existing skills without prompting.")
+@click.option("--dry-run", is_flag=True, help="Show what would be installed without writing.")
+@click.pass_context
+def cli(
+    ctx: click.Context,
+    skill_url: str | None,
+    local_path: str | None,
+    browse: str | None,
+    skills_dir: str | None,
+    name: str | None,
+    force: bool,
+    dry_run: bool,
+) -> None:
+    """Install Claude skills from GitHub or a local directory.
+
+    \b
+    Default — browse the skills folder with fzf (TAB to multi-select):
+      install-skill
+
+    Browse a different GitHub skills folder:
+      install-skill --browse https://github.com/org/repo/tree/branch/path/skills
+
+    Install a single skill directly by URL:
+      install-skill --url https://github.com/org/repo/tree/branch/path/skill
+
+    Install a local skill by symlink (handy while developing one):
+      install-skill --local ./skills/my-skill
+
+    Update previously installed remote skills:
+      install-skill update
+    """
+    if ctx.invoked_subcommand is not None:
+        return
+
+    base_dir = resolve_skills_dir(skills_dir)
+
+    if skill_url and local_path:
+        console.print("[red]Error:[/red] --url and --local are mutually exclusive.")
+        sys.exit(1)
+
+    if local_path:
+        source = Path(local_path).expanduser().resolve()
+        skill_name = name or source.name
+        dest = base_dir / skill_name
+
+        console.print(f"[bold]Skill:[/bold]       {skill_name}")
+        console.print(f"[bold]Source:[/bold]       {source}  (symlink)")
+        console.print(f"[bold]Destination:[/bold]  {dest}")
+
+        install_local_skill(source, dest, force, dry_run)
+
+    elif skill_url:
+        try:
+            owner, repo, branch, path = parse_github_url(skill_url)
+        except click.BadParameter as e:
+            console.print(f"[red]Error:[/red] {e}")
+            sys.exit(1)
+
+        skill_name = name or path.rstrip("/").rsplit("/", 1)[-1]
+        dest = base_dir / skill_name
+
+        console.print(f"[bold]Skill:[/bold]       {skill_name}")
+        console.print(f"[bold]Source:[/bold]       {owner}/{repo}@{branch}  →  {path}/")
+        console.print(f"[bold]Destination:[/bold]  {dest}")
+
+        try:
+            install_skill(owner, repo, branch, path, dest, force, dry_run)
+        except click.ClickException as e:
+            console.print(f"[red]Error:[/red] {e.format_message()}")
+            sys.exit(1)
+
+    else:
+        # fzf browse mode (default)
+        browse_url = browse or DEFAULT_BROWSE_URL
+        try:
+            owner, repo, branch, path = parse_github_url(browse_url)
+        except click.BadParameter as e:
+            console.print(f"[red]Error:[/red] {e}")
+            sys.exit(1)
+
+        with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as p:
+            task = p.add_task("Fetching skill list from GitHub…", total=None)
+            try:
+                tree = fetch_tree(owner, repo, branch)
+            except click.ClickException as e:
+                p.stop()
+                console.print(f"[red]Error:[/red] {e.format_message()}")
+                sys.exit(1)
+            dirs = list_skill_dirs(tree, path)
+            p.update(task, description=f"Found {len(dirs)} skills.")
+
+        if not dirs:
+            console.print(f"[red]No skill subdirectories found at:[/red] {path}")
+            sys.exit(1)
+
+        installed = {d for d in dirs if (base_dir / d).exists()}
+
+        needs_update: dict[str, str] = {}
+        if installed:
+            with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as p:
+                t = p.add_task(f"Checking {len(installed)} installed skill(s) for updates…", total=None)
+                for skill_name in installed:
+                    dest = base_dir / skill_name
+                    if dest.is_symlink():
+                        continue  # local dev symlink, not a remote install
+
+                    meta = read_metadata(dest)
+                    if meta:
+                        m_owner, m_repo, m_branch, m_path = (
+                            meta["owner"], meta["repo"], meta["branch"], meta["path"]
+                        )
+                    else:
+                        m_owner, m_repo, m_branch = owner, repo, branch
+                        m_path = path.rstrip("/") + "/" + skill_name
+
+                    repo_date = get_skill_last_commit(m_owner, m_repo, m_branch, m_path)
+                    local_date = get_local_skill_mtime(base_dir, skill_name)
+                    if repo_date and local_date and repo_date > local_date:
+                        needs_update[skill_name] = repo_date.strftime("%Y-%m-%d")
+
+        selected = pick_skills(dirs, installed, needs_update)
+        if not selected:
+            console.print("Nothing selected.")
+            return
+
+        console.print()
+        for skill_name in selected:
+            skill_path = path.rstrip("/") + "/" + skill_name
+            dest = base_dir / skill_name
+            install_skill(owner, repo, branch, skill_path, dest, force, dry_run)
+
+
+@cli.command()
+@click.argument("skill_names", nargs=-1)
+@click.option(
+    "--skills-dir", default=None,
+    help="Local directory where skills are installed.  [default: ~/.claude/skills]",
+)
+@click.option("--force", is_flag=True, help="Reinstall even if the local copy looks current.")
+@click.option("--dry-run", is_flag=True, help="Show what would be updated without writing.")
+def update(
+    skill_names: tuple[str, ...],
+    skills_dir: str | None,
+    force: bool,
+    dry_run: bool,
+) -> None:
+    """Update previously installed remote skills to their latest version.
+
+    \b
+    Update everything that has a newer version available:
+      install-skill update
+
+    Update specific skills only:
+      install-skill update python-cli another-skill
+
+    Skills installed with --local are symlinks and always current, so they're
+    reported and skipped. Skills with no recorded source (installed before
+    this metadata existed, or copied in by hand) are skipped too — reinstall
+    them with --url to enable updates.
+    """
+    base_dir = resolve_skills_dir(skills_dir)
+    targets = list(skill_names) if skill_names else installed_skill_names(base_dir)
+
+    if not targets:
+        console.print("No installed skills found.")
+        return
+
+    for skill_name in targets:
+        dest = base_dir / skill_name
+        if not dest.exists() and not dest.is_symlink():
+            console.print(f"[red]✗[/red] {skill_name}  (not installed)")
+            continue
+
+        if dest.is_symlink():
+            console.print(f"[dim]—[/dim] {skill_name}  (local symlink, always current)")
+            continue
+
+        meta = read_metadata(dest)
+        if not meta:
+            console.print(
+                f"[yellow]?[/yellow] {skill_name}  (no recorded source, skipping — "
+                "reinstall with --url to enable updates)"
+            )
+            continue
+
+        owner, repo, branch, path = meta["owner"], meta["repo"], meta["branch"], meta["path"]
+
+        if not force:
+            repo_date = get_skill_last_commit(owner, repo, branch, path)
+            local_date = get_local_skill_mtime(base_dir, skill_name)
+            if repo_date and local_date and repo_date <= local_date:
+                console.print(f"[dim]✓[/dim] {skill_name}  (up to date)")
+                continue
+
+        try:
+            install_skill(owner, repo, branch, path, dest, force=True, dry_run=dry_run)
+        except click.ClickException as e:
+            console.print(f"[red]Error:[/red] {skill_name}: {e.format_message()}")
+
+
+if __name__ == "__main__":
+    cli()
