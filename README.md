@@ -20,6 +20,7 @@ Each skill lives in its own directory containing a `SKILL.md` (the instructions 
 | Skill | Description |
 |---|---|
 | [python-cli](skills/python-cli/SKILL.md) | Opinionated guide for building Python CLI programs — `uv` for packages, `click`/`rich`/`textual` for CLI/TUI, XDG config conventions, single-file scripts with PEP 723 inline dependencies. |
+| [taude](skills/taude/SKILL.md) | Maintains a personal LLM wiki inside an Obsidian vault — ingests articles archivore scrapes daily into synthesized, cross-referenced topic pages. |
 
 ### agents/
 
