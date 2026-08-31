@@ -37,11 +37,28 @@ tags:
 taude-ingested: 2026-08-31T14:30:00Z   # UTC, ISO 8601
 ```
 
+`Raw/index.md` is archivore's own generated catalog file, not an article: it has no
+YAML frontmatter and is rewritten wholesale on every scrape. Never read, classify, or
+write it — all discovery and ingest commands below target `Raw/[0-9]*.md` (the
+`YYYYMMDD-...` naming convention) specifically to exclude it.
+
+If a raw filename contains `[`, `]`, or `#`, cite it with a standard Markdown link
+(`[Article Title](Raw/Filename.md)`) instead of a wikilink — those characters break
+Obsidian's `[[...]]` parsing.
+
+Example quoted path, since the vault name has both a space and an apostrophe:
+
+```sh
+cd "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Todd's Obsidian Vault/Archivore"
+```
+
 ## Operation: `/taude ingest`
 
 1. Find unprocessed raw files: files in `Raw/` with no `taude-ingested:` key in
-   frontmatter (`grep -L 'taude-ingested:' Raw/*.md`). If none, report "nothing to
-   ingest" and stop — still update `log.md` with a zero-item entry.
+   frontmatter (`grep -L 'taude-ingested:' Raw/[0-9]*.md`). The `[0-9]*` glob matches
+   only the `YYYYMMDD-Title.md` article convention, so it excludes archivore's
+   generated `Raw/index.md` (see Raw file conventions above). If none, report "nothing
+   to ingest" and stop — still update `log.md` with a zero-item entry.
 2. Read `schema.md` for the current Active topic list.
 3. Read each unprocessed raw file's body and frontmatter. Classify it against Active
    topics — an article may match multiple, or none.
@@ -54,19 +71,27 @@ taude-ingested: 2026-08-31T14:30:00Z   # UTC, ISO 8601
 5. For each processed raw file, stamp its frontmatter: add `topic/<slug>` tag(s) (or
    `topic/unfiled` if no Active topic matched) and `taude-ingested: <UTC timestamp>`.
    This is the only edit made to a raw file — never touch the body.
-6. Look across files just tagged `topic/unfiled` in this run plus any from previous
-   runs still untagged with a real topic: if 2-3 cluster around a clear shared theme,
-   add a proposal to the "Proposed topics" section of `schema.md` (slug, name,
-   candidate source files) and mention it in the digest. Do not create the topic page
-   or move it to Active without Todd's approval.
-7. Update `index.md`: one line per topic page touched this run (link, one-line
+6. Look across files just tagged `topic/unfiled` in this run plus any still tagged
+   `topic/unfiled` from previous runs (`grep -l 'topic/unfiled' Raw/[0-9]*.md`): if 2-3
+   cluster around a clear shared theme, add a proposal to the "Proposed topics" section
+   of `schema.md` (slug, name, candidate source files) and mention it in the digest. Do
+   not create the topic page or move it to Active without Todd's approval.
+7. Back-fill previously unfiled files against newly-Active topics: find every file
+   tagged `topic/unfiled` (`grep -l 'topic/unfiled' Raw/[0-9]*.md`) and check each
+   against the *current* Active topic list from `schema.md` (step 2) — it may have
+   grown since that file was last processed, e.g. Todd approved a proposal on another
+   machine. For any that now match an Active topic: weave it into the matching topic
+   page the same way as step 4, then update that raw file's frontmatter tags —
+   replace `topic/unfiled` with the real `topic/<slug>` — leaving `taude-ingested`
+   unchanged since it was already stamped.
+8. Update `index.md`: one line per topic page touched this run (link, one-line
    summary, source count), keeping existing untouched entries as-is.
-8. Append one entry to `log.md`:
+9. Append one entry to `log.md`:
    `## [YYYY-MM-DD HH:MM] ingest | <N> sources → <M> topics touched`
    with a short bullet list of which topics changed and any proposals raised.
-9. Report a digest: sources processed, topics created/updated, proposals raised. When
-   run interactively, this goes to chat. When run headless (`claude -p`), fold it into
-   the `log.md` entry so nothing is lost.
+10. Report a digest: sources processed, topics created/updated, proposals raised. When
+    run interactively, this goes to chat. When run headless (`claude -p`), fold it into
+    the `log.md` entry so nothing is lost.
 
 **Backlog note:** the first-ever run will find ~275 unprocessed files. Process them in
 date order, in batches (e.g. 20-30 at a time) rather than one giant pass, so topic pages

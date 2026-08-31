@@ -1,8 +1,8 @@
 # taude
 
 Maintains Todd's personal LLM wiki — a topics-only, self-compounding knowledge base
-built inside his Obsidian vault from articles [archivore](../../../python-test)
-scrapes daily.
+built inside his Obsidian vault from articles `archivore` (a sibling project at
+`~/dev/python-test/`) scrapes daily.
 
 ## What it does
 
@@ -21,6 +21,31 @@ scrapes daily.
 
 Explicit `/taude ...` commands, or natural requests like "ingest my wiki", "what's in
 my wiki about local LLMs".
+
+## Automated runs
+
+archivore can trigger ingest automatically after each scrape via its optional
+`post_run_cmd` hook (`claude -p "/taude ingest"`), so it can run unattended, headless,
+with no one watching. Two things have to be true for that to actually work:
+
+- **Permissions.** Claude Code's default permission mode requires interactive approval
+  for Write/Edit calls, which a headless `claude -p` run has no way to give — so an
+  unattended ingest would read the vault fine but fail every write silently (archivore's
+  side swallows non-zero exits from `post_run_cmd`). Grant write access scoped to the
+  vault rather than a blanket allow-all:
+
+  ```sh
+  claude -p "/taude ingest" --permission-mode acceptEdits --add-dir "<vault>/Archivore"
+  ```
+
+  (Flag names current as of this writing — recheck `claude --help` if they've since
+  changed.)
+
+- **Installation location.** A headless run from archivore's working directory needs to
+  resolve `/taude`, which means this skill has to be installed at the user level
+  (`~/.claude/skills/taude/`), not only present in this repo checkout. Use
+  `./install-skill --local ./skills/taude` (see the top-level README) or `install-skill`'s
+  GitHub install path.
 
 ## Caveats
 
