@@ -111,6 +111,9 @@ dotnet, data-analytics, cli-tools, python, swiftui, kubernetes, prompt-engineeri
 distributed-systems, bi-tools, swe-misc, testing, vscode, n8n, data-engineering,
 computer-setup, tmux, rust, emacs, nix.
 
+Additional user-requested seeds: agentic-coding-tools, agentic-coding-tips,
+claude-code-tips, local-agentic-coding, local-llms, ai-lifestyle, ai-slop, tui.
+
 Human-readable page names map from slugs (e.g. `ai-mcp` → "AI – MCP"); the slug↔name
 mapping lives in `schema.md`.
 
