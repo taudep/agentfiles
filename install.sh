@@ -6,6 +6,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
+SKILLS_DIR="${SKILLS_DIR:-$CLAUDE_DIR/skills}"
 
 link_bin() {
   local src="$1"
@@ -56,6 +57,36 @@ merge_hook_event() {
   ' "$settings_file" > "$tmp" && mv "$tmp" "$settings_file"
 }
 
+# Symlinks every skill subdirectory under ./skills into ~/.claude/skills, so
+# re-running install.sh after adding a new skill picks it up automatically.
+link_skills() {
+  local skills_src="$REPO_DIR/skills"
+  [[ -d "$skills_src" ]] || return
+
+  mkdir -p "$SKILLS_DIR"
+
+  local dir name dest
+  for dir in "$skills_src"/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    dest="$SKILLS_DIR/$name"
+
+    if [[ -L "$dest" ]]; then
+      if [[ "$(readlink "$dest")" == "${dir%/}" ]]; then
+        echo "✓ skill $name already linked"
+      else
+        ln -sf "${dir%/}" "$dest"
+        echo "✓ skill $name -> $dest (relinked)"
+      fi
+    elif [[ -e "$dest" ]]; then
+      echo "✗ skill $name: $dest already exists and isn't a symlink — skipping. Remove it manually if you want install.sh to manage it."
+    else
+      ln -s "${dir%/}" "$dest"
+      echo "✓ skill $name -> $dest"
+    fi
+  done
+}
+
 merge_claude_hooks_settings() {
   if ! command -v jq >/dev/null 2>&1; then
     echo "✗ jq not found — skipping session-resume hook setup in $CLAUDE_DIR/settings.json. Install jq and re-run to enable it."
@@ -81,6 +112,7 @@ merge_claude_hooks_settings() {
 }
 
 link_bin "$REPO_DIR/install-skill"
+link_skills
 
 link_claude_hook "$REPO_DIR/hooks/session-end-resume.sh"
 link_claude_hook "$REPO_DIR/hooks/session-start-resume.sh"
