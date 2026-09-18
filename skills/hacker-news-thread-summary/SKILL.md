@@ -24,11 +24,18 @@ best-evidenced finding, not a chronological list of comments.
    that emerged from it.
 4. **Draft the post**, modeled on this structure (see
    `reference/example-skip-ollama.md` for a full worked example):
-   - **Title**: a concrete claim or action, not "HN discusses X".
+   - **Title**: a concrete claim or action, not "HN discusses X". Never
+     phrase it as antithesis — "Stop X, Start Y" / "It's not X, it's Y" —
+     state the claim directly instead (e.g. "Pick a Model That Works and
+     Stop There", not "Stop Optimising Your Model Choice, Start
+     Satisficing").
    - Attribution line under the title:
      `*Prompted by an HN thread: [<thread title>](<url>)*`
-   - **Opening paragraph**: the sharpest concrete fact from the thread,
-     then the more useful finding underneath it.
+   - **Opening paragraph**: state the subject and claim directly in
+     sentence one, active voice. No throat-clearing or meta-commentary
+     about the source ("a thread turned into...", "the real lesson is...",
+     "what's interesting is...") — say the thing, don't narrate discovering
+     it.
    - **Body**: organized by argument structure (case-for/case-against, a
      comparison table, a how-to) — never by comment chronology. Attribute
      specific claims to commenters only where it adds credibility, not on
@@ -66,3 +73,5 @@ best-evidenced finding, not a chronological list of comments.
 | Saving with `draft: false` | Always `draft: true` — publishing is the user's call |
 | Guessing the thread when no link given | Ask first |
 | Writing to `posts/` or `til/` directly | Always `ai-drafted/` — that's what tags it `ai-drafted` and routes it to `content/posts/` on sync |
+| Opening paragraph narrates the source ("a thread turned into...") | State the subject and claim directly in sentence one instead |
+| Title/framing uses "Stop X, Start Y" or "It's not X, it's Y" (antithesis) | State the claim directly — this is a well-known LLM writing tic, not a hook |
