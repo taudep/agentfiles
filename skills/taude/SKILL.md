@@ -70,7 +70,13 @@ cd "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Todd's Obsidian Vault/Arc
    Update the page's frontmatter (`sources` count, `updated` date).
 5. For each processed raw file, stamp its frontmatter: add `topic/<slug>` tag(s) (or
    `topic/unfiled` if no Active topic matched) and `taude-ingested: <UTC timestamp>`.
-   This is the only edit made to a raw file — never touch the body.
+   This is the only edit made to a raw file — never touch the body. Add
+   `taude-ingested` as its own line inside the frontmatter block — never append it to
+   the same line as the closing `---` delimiter, which breaks YAML parsing for the
+   whole file. After stamping each file, verify it still parses as valid YAML before
+   moving to the next one (a run once did this wrong for 65 files in a row before
+   catching and repairing it — cheaper to check per-file than to repair a whole batch
+   after the fact).
 6. Look across files just tagged `topic/unfiled` in this run plus any still tagged
    `topic/unfiled` from previous runs (`grep -l 'topic/unfiled' Raw/[0-9]*.md`): if 2-3
    cluster around a clear shared theme, add a proposal to the "Proposed topics" section
