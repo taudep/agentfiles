@@ -25,10 +25,15 @@ best-evidenced finding, not a chronological list of comments.
 4. **Draft the post**, modeled on this structure (see
    `reference/example-skip-ollama.md` for a full worked example):
    - **Title**: a concrete claim or action, not "HN discusses X". Never
-     phrase it as antithesis — "Stop X, Start Y" / "It's not X, it's Y" —
-     state the claim directly instead (e.g. "Pick a Model That Works and
-     Stop There", not "Stop Optimising Your Model Choice, Start
-     Satisficing").
+     phrase it as antithesis — any title that pairs an affirmative claim
+     with its explicit negation, in *any* wording ("Stop X, Start Y",
+     "It's not X, it's Y", "X, Not Y", "X Instead of Y") — state the claim
+     directly instead (e.g. "Pick a Model That Works and Stop There", not
+     "Stop Optimising Your Model Choice, Start Satisficing"; "Bend's
+     Author Knew Formal Verification All Along", not "Bend's Linked Lists
+     Are a Tradeoff, Not a Blind Spot"). If a draft title contains "not,"
+     "instead of," or "rather than" contrasting two claims, that's the
+     pattern — rewrite without it, don't just swap the wording.
    - Attribution line under the title:
      `*Prompted by an HN thread: [<thread title>](<url>)*`
    - **Opening paragraph**: state the subject and claim directly in
@@ -75,3 +80,4 @@ best-evidenced finding, not a chronological list of comments.
 | Writing to `posts/` or `til/` directly | Always `ai-drafted/` — that's what tags it `ai-drafted` and routes it to `content/posts/` on sync |
 | Opening paragraph narrates the source ("a thread turned into...") | State the subject and claim directly in sentence one instead |
 | Title/framing uses "Stop X, Start Y" or "It's not X, it's Y" (antithesis) | State the claim directly — this is a well-known LLM writing tic, not a hook |
+| Title reads as antithesis in a *different* wording than the two listed examples (e.g. "X, Not Y") | The rule is about the pattern, not the exact phrase — any title contrasting a claim with its explicit negation needs a full rewrite, not a synonym swap |
