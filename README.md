@@ -35,10 +35,12 @@ Claude Code [hook](https://docs.claude.com/en/docs/claude-code/hooks) scripts, p
 
 | Hook | Event | What it does |
 |---|---|---|
-| [session-end-resume.sh](hooks/session-end-resume.sh) | `SessionEnd` | Writes a `.claude-resume` file in the session's working directory containing the command to resume it (e.g. `claude --resume <session-id>`). |
-| [session-start-resume.sh](hooks/session-start-resume.sh) | `SessionStart` (matcher: `startup`) | If the launch directory has a `.claude-resume` file, looks up that session's transcript for a title/last-prompt summary and passes it to Claude as `additionalContext`, so it can offer to resume the old session instead of starting fresh. |
+| [session-end-resume.sh](hooks/session-end-resume.sh) | `SessionEnd` | Records the command to resume the session (e.g. `claude --resume <session-id>`) in `~/.claude/resume/<dir-key>`, keyed by the session's working directory. Nothing is written into the project folder. |
+| [session-start-resume.sh](hooks/session-start-resume.sh) | `SessionStart` (matcher: `startup`) | If there's a resume pointer for the launch directory, looks up that session's transcript for a title/last-prompt summary and passes it to Claude as `additionalContext`, so it can offer to resume the old session instead of starting fresh. Moves any old-style `.claude-resume` file out of the project folder. |
 
 Together these mean: exit Claude Code in a directory, and the next time you launch it fresh there, it'll notice the previous session and ask if you want to pick it back up. Requires [`jq`](https://jqlang.org/).
+
+These are interim: [taude](https://github.com/taudep/taude)'s session tracking (phase 2) replaces them, and they'll be removed from agentfiles when it ships.
 
 ## Usage
 
