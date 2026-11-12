@@ -7,10 +7,9 @@ Personal collection of [Claude Code](https://claude.com/claude-code) configurati
 ```
 agentfiles/
 ├── agents/        # Custom subagent definitions
-├── hooks/         # Claude Code hook scripts + the settings.json fragment that wires them up
 ├── skills/        # Custom skills (SKILL.md + docs)
 ├── install-skill  # CLI to install skills from GitHub or a local directory
-└── install.sh     # Sets up this repo's tools (PATH + hooks, see below)
+└── install.sh     # Sets up this repo's tools (see below)
 ```
 
 ### skills/
@@ -29,18 +28,9 @@ Each skill lives in its own directory containing a `SKILL.md` (the instructions 
 
 Custom subagent definitions (currently empty — add agent `.md` files here following Claude Code's subagent format).
 
-### hooks/
+### Session resume
 
-Claude Code [hook](https://docs.claude.com/en/docs/claude-code/hooks) scripts, plus a `settings.json` fragment that `install.sh` merges into `~/.claude/settings.json` to wire them up.
-
-| Hook | Event | What it does |
-|---|---|---|
-| [session-end-resume.sh](hooks/session-end-resume.sh) | `SessionEnd` | Records the command to resume the session (e.g. `claude --resume <session-id>`) in `~/.claude/resume/<dir-key>`, keyed by the session's working directory. Nothing is written into the project folder. |
-| [session-start-resume.sh](hooks/session-start-resume.sh) | `SessionStart` (matcher: `startup`) | If there's a resume pointer for the launch directory, looks up that session's transcript for a title/last-prompt summary and passes it to Claude as `additionalContext`, so it can offer to resume the old session instead of starting fresh. Moves any old-style `.claude-resume` file out of the project folder. |
-
-Together these mean: exit Claude Code in a directory, and the next time you launch it fresh there, it'll notice the previous session and ask if you want to pick it back up. Requires [`jq`](https://jqlang.org/).
-
-These are interim: [taude](https://github.com/taudep/taude)'s session tracking (phase 2) replaces them, and they'll be removed from agentfiles when it ships.
+The session-resume hooks that used to live here (`hooks/session-*-resume.sh`) are retired. [taude](https://github.com/taudep/taude) now tracks Claude Code sessions: each new session starts with where the project left off and its open next actions, and `taude setup` removes the old hook entries from `~/.claude/settings.json`.
 
 ## Usage
 
@@ -54,7 +44,7 @@ Run once after cloning to set up this repo's tools:
 ./install.sh
 ```
 
-This symlinks `install-skill` into `~/.local/bin` (creating it if needed) so it's available as a bare command, symlinks the scripts in `hooks/` into `~/.claude/hooks/`, and merges `hooks/settings.json` into `~/.claude/settings.json` so the hooks are actually registered. It's safe to re-run — it skips anything already correctly linked or merged, and refuses to overwrite a file at the destination that isn't a symlink it created. To use different directories, set `BIN_DIR` and/or `CLAUDE_DIR`:
+This symlinks `install-skill` into `~/.local/bin` (creating it if needed) so it's available as a bare command, and symlinks each skill in `skills/` into `~/.claude/skills/`. It's safe to re-run — it skips anything already correctly linked or merged, and refuses to overwrite a file at the destination that isn't a symlink it created. To use different directories, set `BIN_DIR` and/or `CLAUDE_DIR`:
 
 ```sh
 BIN_DIR=/usr/local/bin sudo -E ./install.sh
