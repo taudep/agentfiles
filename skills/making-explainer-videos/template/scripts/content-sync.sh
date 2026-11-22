@@ -10,7 +10,10 @@
 #   scenes.json, the source PDF, social/, youtube/   (the script and copy)
 #   public/audio/*.raw.*  → audio/                  (paid ElevenLabs audio: pulling it on another
 #                                                    machine means re-rendering costs nothing)
-#   out/publish/          → publish/                (approved upload kit; push only)
+#   out/publish/          → publish/                (approved upload kit; push only). If
+#                                                    EXPLAINER_RENDERS_DIR is set, the kit goes to
+#                                                    $EXPLAINER_RENDERS_DIR/<project>/ instead, so big
+#                                                    video files can live outside the notes vault.
 # Code, node_modules, page renders and intermediate audio are not synced (they regenerate).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -27,7 +30,12 @@ case "$mode" in
     [ -n "$src_pdf" ] && [ -f "$src_pdf" ] && cp "$src_pdf" "$dest/"
     for d in social youtube; do [ -d "$d" ] && rsync -a "$d/" "$dest/$d/"; done
     rsync -a --include='*.raw.mp3' --include='*.raw.json' --exclude='*' public/audio/ "$dest/audio/" 2>/dev/null || true
-    [ -d out/publish ] && rsync -a out/publish/ "$dest/publish/"
+    if [ -d out/publish ]; then
+      kit="${EXPLAINER_RENDERS_DIR:+$EXPLAINER_RENDERS_DIR/$name}"
+      kit="${kit:-$dest/publish}"
+      mkdir -p "$kit" && rsync -a out/publish/ "$kit/"
+      echo "upload kit → $kit"
+    fi
     echo "pushed to $dest"
     ;;
   pull)

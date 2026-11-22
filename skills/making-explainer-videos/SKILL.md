@@ -29,6 +29,10 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
   the approved upload kit. `scripts/content-sync.sh push <project>` after every approved change;
   `scripts/content-sync.sh pull <project>` to resume on any machine. Pulled audio means
   re-rendering costs nothing; confirm with `npm run narrate -- --dry-run`.
+- **Rendered videos:** the upload kit goes to `$EXPLAINER_RENDERS_DIR/<project>/` when that's set;
+  otherwise it goes in the content folder (`publish/`). Big video files may not belong in a notes vault.
+- **Every new video** saves its source material there from the start: copy the source PDF into the
+  content folder and push after the first draft, not only at the end.
 - If `$EXPLAINER_CONTENT_DIR` is unset, ask the user where content should live. Never put
   content (PDF, voice audio, voice ID, scripts) in the skill's repo; it's public.
 

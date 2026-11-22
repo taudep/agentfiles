@@ -9,7 +9,7 @@ word-synced captions and camera zooms into the source's real quotes and figures.
   scene types), `template/` (working Remotion + ElevenLabs project), `scripts/new-video.sh`
   (scaffold a new project from the template).
 - **Setup per machine:** clone this repo, run `./install.sh` (or `install-skill` on this folder), set
-  `EXPLAINER_CONTENT_DIR` to the folder holding per-video content, and add the ElevenLabs key to
+  `EXPLAINER_CONTENT_DIR` to the folder holding per-video content (optional `EXPLAINER_RENDERS_DIR` for rendered videos), and add the ElevenLabs key to
   Keychain (`security add-generic-password -a "$USER" -s elevenlabs-api-key -w`). Optional:
   `ELEVENLABS_VOICE_ID`.
 - **Requires:** Node 20+, ffmpeg/ffprobe, `uv` (for the PyMuPDF extractor), macOS for the
