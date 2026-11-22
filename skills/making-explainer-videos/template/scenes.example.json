@@ -1,0 +1,309 @@
+{
+  "title": "Local LLMs: the four-month gap and the night shift",
+  "source": "Local-LLM-Karpathy-Thesis.pdf",
+  "voice": {
+    "speed": 1.0,
+    "elevenlabs": {
+      "voice_id": "YOUR_VOICE_ID",
+      "model_id": "eleven_v4",
+      "voice_settings": {
+        "stability": 0.55,
+        "similarity_boost": 0.8
+      }
+    },
+    "say": {
+      "voice": "Samantha",
+      "rate": 205
+    }
+  },
+  "scenes": [
+    {
+      "id": "s01-hook",
+      "type": "BigNumber",
+      "narration": "Rate limits are tightening, while open models hit four months behind the frontier — and Karpathy's LLM OS kernel just moved onto your desk.",
+      "props": {
+        "kicker": "Open models now trail the frontier by",
+        "prefix": "~",
+        "value": 4,
+        "suffix": " months",
+        "sub": "…and the LLM OS kernel just moved onto your desk.",
+        "subCue": "karpathy",
+        "footnote": "Gap measured by Epoch AI, May 2026"
+      }
+    },
+    {
+      "id": "s02-not-cheaper",
+      "type": "PaperZoom",
+      "narration": "You don't go local to shave pennies off an API.",
+      "props": {
+        "pageLabel": "p. 4",
+        "shots": [
+          {
+            "page": 4,
+            "find": "You do not go local to beat the price",
+            "findEnd": "list.",
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "s03-advantages",
+      "type": "Checklist",
+      "narration": "You go local for four brutal advantages: nothing leaves your silicon, nobody cuts your throttle, ten thousand loops cost zero, and the weights don't shift overnight from a silent lab update.",
+      "props": {
+        "title": "4 brutal advantages",
+        "items": [
+          {
+            "text": "Nothing leaves your silicon",
+            "cue": "nothing"
+          },
+          {
+            "text": "Nobody cuts your throttle",
+            "cue": "nobody"
+          },
+          {
+            "text": "10,000 loops cost $0",
+            "cue": "ten"
+          },
+          {
+            "text": "Weights never shift overnight",
+            "cue": "weights"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s04-three-numbers",
+      "type": "PaperZoom",
+      "narration": "Most setups fail on three cold numbers: capacity, bandwidth, and utilization.",
+      "props": {
+        "pageLabel": "p. 4, Fig. 5",
+        "shots": [
+          {
+            "page": 4,
+            "rect": [
+              0.09,
+              0.085,
+              0.915,
+              0.188
+            ],
+            "zoom": 2.0,
+            "pan": true,
+            "cue": "capacity"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s05-fit",
+      "type": "PaperZoom",
+      "narration": "Keep the file under two-thirds of your RAM, for the KV cache — grab a Q4 K M quant: one-third the size, with zero measurable loss.",
+      "props": {
+        "pageLabel": "pp. 3 & 6",
+        "shots": [
+          {
+            "page": 3,
+            "find": "the download should be no bigger than about two",
+            "findEnd": "headroom.",
+            "highlight": true
+          },
+          {
+            "page": 6,
+            "find": "The default. A third of the size, no",
+            "findEnd": "measurable loss.",
+            "highlight": true,
+            "cue": "grab"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s06-moe",
+      "type": "PaperZoom",
+      "narration": "Watch active parameters, not total: a 125B Mixture-of-Experts model reading 9B per token outruns a dense 27B on the same rig.",
+      "props": {
+        "pageLabel": "p. 6, Fig. 3",
+        "shots": [
+          {
+            "page": 6,
+            "rect": [
+              0.09,
+              0.075,
+              0.91,
+              0.265
+            ]
+          },
+          {
+            "page": 6,
+            "find": "MoE 125B-A9B",
+            "findEnd": "125B in memory, 9B read per token",
+            "cue": "mixture"
+          },
+          {
+            "page": 6,
+            "rect": [
+              0.095,
+              0.088,
+              0.32,
+              0.252
+            ],
+            "cue": "dense"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s07-context",
+      "type": "PaperZoom",
+      "narration": "And if it forgets after four pages, crank Ollama context length to sixty-five thousand five hundred thirty-six.",
+      "props": {
+        "pageLabel": "p. 7",
+        "badge": "PRO TIP",
+        "shots": [
+          {
+            "page": 7,
+            "find": "forgets after a few pages",
+            "findEnd": "what the cache costs you",
+            "highlight": true
+          },
+          {
+            "page": 7,
+            "find": "OLLAMA_CONTEXT_LENGTH=65536 ollama serve",
+            "highlight": true,
+            "cue": "crank"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s08-serve",
+      "type": "PaperZoom",
+      "narration": "A chat window is a parlor trick. Point your tools at localhost, port one one four three four, and you have infrastructure.",
+      "props": {
+        "pageLabel": "p. 8, Fig. 8",
+        "shots": [
+          {
+            "page": 8,
+            "rect": [
+              0.09,
+              0.33,
+              0.91,
+              0.5
+            ],
+            "zoom": 1.9,
+            "pan": true
+          },
+          {
+            "page": 8,
+            "find": "localhost:11434",
+            "highlight": true,
+            "cue": "infrastructure"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s09-router",
+      "type": "PaperZoom",
+      "narration": "Route up to seventy percent of the grunt work through a tiny 4B model, save the 27B for code, and put the box on the night shift.",
+      "props": {
+        "pageLabel": "p. 9, Fig. 9",
+        "shots": [
+          {
+            "page": 9,
+            "find": "Serving a 7B model is 10 to",
+            "findEnd": "kind a small model can take.",
+            "highlight": true
+          },
+          {
+            "page": 9,
+            "find": "classify, extract, tag",
+            "findEnd": "rewrite, one tool call",
+            "cue": "tiny"
+          },
+          {
+            "page": 9,
+            "find": "write code, multi-step",
+            "findEnd": "work, private files",
+            "cue": "save"
+          },
+          {
+            "page": 11,
+            "find": "Yesterday",
+            "findEnd": "This is what justifies owning hardware.",
+            "cue": "night"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s10-space-heater",
+      "type": "PaperZoom",
+      "narration": "A GPU used four hours a day is a space heater — let it chew through a thousand tickets, and write your morning brief while you sleep.",
+      "props": {
+        "pageLabel": "pp. 4 & 11",
+        "shots": [
+          {
+            "page": 4,
+            "find": "A card used four hours a day",
+            "findEnd": "needs a night shift.",
+            "highlight": true
+          },
+          {
+            "page": 11,
+            "find": "A thousand tickets labelled overnight",
+            "findEnd": "nothing sent anywhere.",
+            "highlight": true,
+            "cue": "chew"
+          },
+          {
+            "page": 11,
+            "find": "Yesterday",
+            "findEnd": "This is what justifies owning hardware.",
+            "highlight": true,
+            "cue": "morning"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s11-empty-list",
+      "type": "PaperZoom",
+      "narration": "An idle card isn't a hardware problem; it's an empty job list.",
+      "props": {
+        "pageLabel": "p. 17",
+        "shots": [
+          {
+            "page": 17,
+            "find": "The card that sits idle twenty hours a day is not a",
+            "findEnd": "empty job list.",
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "s12-cta",
+      "type": "CTA",
+      "narration": "Run: ollama run qwen three, four-B. Kill the Wi-Fi, and watch it answer anyway.",
+      "props": {
+        "code": "ollama run qwen3:4b",
+        "codeCue": "run",
+        "steps": [
+          {
+            "text": "Kill the Wi-Fi",
+            "cue": "kill"
+          },
+          {
+            "text": "Ask again",
+            "cue": "watch"
+          }
+        ],
+        "end": "It answers anyway.",
+        "endCue": "anyway",
+        "footnote": "Paper + commands in the description"
+      }
+    }
+  ]
+}

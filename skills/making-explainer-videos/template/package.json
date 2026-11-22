@@ -1,0 +1,25 @@
+{
+  "name": "training-video-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "inspect": "uv run --no-config --script scripts/inspect_pdf.py",
+    "paper": "uv run --no-config --script scripts/extract_paper.py",
+    "narrate": "node scripts/narrate.mjs",
+    "studio": "remotion studio",
+    "render": "remotion render Short out/short.mp4",
+    "srt": "node scripts/srt.mjs",
+    "build": "npm run paper && npm run narrate && npm run render && npm run srt"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.545",
+    "@remotion/google-fonts": "4.0.545",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.545"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}

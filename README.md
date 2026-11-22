@@ -19,6 +19,7 @@ Each skill lives in its own directory containing a `SKILL.md` (the instructions 
 
 | Skill | Description |
 |---|---|
+| [making-explainer-videos](skills/making-explainer-videos/SKILL.md) | Paper/PDF → tight narrated vertical explainer video (YouTube Shorts style): Remotion template, ElevenLabs v4 voice with word-synced captions, camera zooms and highlights on the source's real quotes and figures. |
 | [python-cli](skills/python-cli/SKILL.md) | Opinionated guide for building Python CLI programs — `uv` for packages, `click`/`rich`/`textual` for CLI/TUI, XDG config conventions, single-file scripts with PEP 723 inline dependencies. |
 
 ### agents/
