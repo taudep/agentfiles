@@ -7,10 +7,9 @@ Personal collection of [Claude Code](https://claude.com/claude-code) configurati
 ```
 agentfiles/
 ├── agents/        # Custom subagent definitions
-├── hooks/         # Claude Code hook scripts + the settings.json fragment that wires them up
 ├── skills/        # Custom skills (SKILL.md + docs)
 ├── install-skill  # CLI to install skills from GitHub or a local directory
-└── install.sh     # Sets up this repo's tools (PATH + hooks, see below)
+└── install.sh     # Sets up this repo's tools (see below)
 ```
 
 ### skills/
@@ -19,23 +18,20 @@ Each skill lives in its own directory containing a `SKILL.md` (the instructions 
 
 | Skill | Description |
 |---|---|
+| [economist-style](skills/economist-style/SKILL.md) | Apply The Economist style guide to written content — detects weasel words, fillers, passive voice, and other style issues in markdown, HTML, or documentation. |
+| [hacker-news-thread-summary](skills/hacker-news-thread-summary/SKILL.md) | Writes a taude.xyz blog post from a Hacker News comments thread — synthesized by argument and edited with economist-style, saved as an `ai-drafted` draft. |
 | [making-explainer-videos](skills/making-explainer-videos/SKILL.md) | Paper/PDF → tight narrated vertical explainer video (YouTube Shorts style): Remotion template, ElevenLabs v4 voice with word-synced captions, camera zooms and highlights on the source's real quotes and figures. |
 | [python-cli](skills/python-cli/SKILL.md) | Opinionated guide for building Python CLI programs — `uv` for packages, `click`/`rich`/`textual` for CLI/TUI, XDG config conventions, single-file scripts with PEP 723 inline dependencies. |
+| [taude](skills/taude/SKILL.md) | Maintains a personal LLM wiki inside an Obsidian vault — ingests articles archivore scrapes daily into synthesized, cross-referenced topic pages. |
+| [ux-review-laws-of-ux](skills/ux-review-laws-of-ux/SKILL.md) | Reviews UI/UX designs (artifacts, prototypes, screenshots) against the 30 laws from [lawsofux.com](https://lawsofux.com/), grouped into seven review lenses, with a ranked findings table. |
 
 ### agents/
 
 Custom subagent definitions (currently empty — add agent `.md` files here following Claude Code's subagent format).
 
-### hooks/
+### Session resume
 
-Claude Code [hook](https://docs.claude.com/en/docs/claude-code/hooks) scripts, plus a `settings.json` fragment that `install.sh` merges into `~/.claude/settings.json` to wire them up.
-
-| Hook | Event | What it does |
-|---|---|---|
-| [session-end-resume.sh](hooks/session-end-resume.sh) | `SessionEnd` | Writes a `.claude-resume` file in the session's working directory containing the command to resume it (e.g. `claude --resume <session-id>`). |
-| [session-start-resume.sh](hooks/session-start-resume.sh) | `SessionStart` (matcher: `startup`) | If the launch directory has a `.claude-resume` file, looks up that session's transcript for a title/last-prompt summary and passes it to Claude as `additionalContext`, so it can offer to resume the old session instead of starting fresh. |
-
-Together these mean: exit Claude Code in a directory, and the next time you launch it fresh there, it'll notice the previous session and ask if you want to pick it back up. Requires [`jq`](https://jqlang.org/).
+The session-resume hooks that used to live here (`hooks/session-*-resume.sh`) are retired. [taude](https://github.com/taudep/taude) now tracks Claude Code sessions: each new session starts with where the project left off and its open next actions, and `taude setup` removes the old hook entries from `~/.claude/settings.json`.
 
 ## Usage
 
@@ -49,7 +45,7 @@ Run once after cloning to set up this repo's tools:
 ./install.sh
 ```
 
-This symlinks `install-skill` into `~/.local/bin` (creating it if needed) so it's available as a bare command, symlinks the scripts in `hooks/` into `~/.claude/hooks/`, and merges `hooks/settings.json` into `~/.claude/settings.json` so the hooks are actually registered. It's safe to re-run — it skips anything already correctly linked or merged, and refuses to overwrite a file at the destination that isn't a symlink it created. To use different directories, set `BIN_DIR` and/or `CLAUDE_DIR`:
+This symlinks `install-skill` into `~/.local/bin` (creating it if needed) so it's available as a bare command, and symlinks each skill in `skills/` into `~/.claude/skills/`. It's safe to re-run — it skips anything already correctly linked or merged, and refuses to overwrite a file at the destination that isn't a symlink it created. To use different directories, set `BIN_DIR` and/or `CLAUDE_DIR`:
 
 ```sh
 BIN_DIR=/usr/local/bin sudo -E ./install.sh

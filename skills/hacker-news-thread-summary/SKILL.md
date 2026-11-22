@@ -1,0 +1,83 @@
+---
+name: hacker-news-thread-summary
+description: Use when the user wants a taude.xyz blog post written from a Hacker News comment thread — e.g. "summarize this HN thread", "write a post about this HN discussion", "/hacker-news-thread-summary <url>". Triggers on a news.ycombinator.com/item link paired with a request to write it up, or the request alone with no link yet given.
+---
+
+# Hacker News Thread Summary
+
+Turns a Hacker News comments thread into a taude.xyz post: the thread's
+best-evidenced finding, not a chronological list of comments.
+
+## Steps
+
+1. **Get the link.** If not given, ask for it before doing anything else —
+   don't guess or search for "the" relevant thread.
+2. **Fetch the thread.** `WebFetch` the `news.ycombinator.com/item?id=...`
+   URL, prompting for the top-level comments and notable replies with each
+   commenter's argument in detail. If the thread is deep or a competing
+   viewpoint seems under-sampled, also fetch
+   `https://hn.algolia.com/api/v1/items/<id>` (full comment tree as JSON)
+   and re-read from that.
+3. **Find the real finding.** Don't aggregate comments as a listicle.
+   Identify the thread's actual payoff — the fact that reframes the
+   headline claim, the debate's real resolution, or the practical technique
+   that emerged from it.
+4. **Draft the post**, modeled on this structure (see
+   `reference/example-skip-ollama.md` for a full worked example):
+   - **Title**: a concrete claim or action, not "HN discusses X". Never
+     phrase it as antithesis — any title that pairs an affirmative claim
+     with its explicit negation, in *any* wording ("Stop X, Start Y",
+     "It's not X, it's Y", "X, Not Y", "X Instead of Y") — state the claim
+     directly instead (e.g. "Pick a Model That Works and Stop There", not
+     "Stop Optimising Your Model Choice, Start Satisficing"; "Bend's
+     Author Knew Formal Verification All Along", not "Bend's Linked Lists
+     Are a Tradeoff, Not a Blind Spot"). If a draft title contains "not,"
+     "instead of," or "rather than" contrasting two claims, that's the
+     pattern — rewrite without it, don't just swap the wording.
+   - Attribution line under the title:
+     `*Prompted by an HN thread: [<thread title>](<url>)*`
+   - **Opening paragraph**: state the subject and claim directly in
+     sentence one, active voice. No throat-clearing or meta-commentary
+     about the source ("a thread turned into...", "the real lesson is...",
+     "what's interesting is...") — say the thing, don't narrate discovering
+     it.
+   - **Body**: organized by argument structure (case-for/case-against, a
+     comparison table, a how-to) — never by comment chronology. Attribute
+     specific claims to commenters only where it adds credibility, not on
+     every sentence.
+   - **Closing**: one paragraph on the upshot — what to actually believe
+     or do now.
+5. **Edit pass.** **REQUIRED SUB-SKILL:** run the draft through
+   `economist-style` before saving — clarity, precision, brevity.
+6. **Save to the vault** at
+   `~/Library/Mobile Documents/com~apple~CloudDocs/Todd's Obsidian Vault/1 Projects/taude.xyz Blog/ai-drafted/<Title>.md`
+   (title used verbatim as the filename), with frontmatter:
+   ```yaml
+   ---
+   title: <Title>
+   date: <today, YYYY-MM-DD>
+   draft: true
+   tags:
+     - ai-drafted
+   ---
+   ```
+   Write real values directly — never leave literal `<% tp.... %>`
+   Templater syntax in the file; this note isn't created through Obsidian's
+   template flow, so there's nothing to evaluate it.
+7. **Report back**: where the file landed, and that it's still `draft:
+   true` — the user reviews and flips it to `false`, then runs
+   `publish-taude-blog` (or the taude.xyz repo's own publish flow) when
+   ready. Don't publish it yourself.
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---|---|
+| Listing comments in thread order | Organize by argument, not chronology |
+| Skipping the economist-style pass | Always run it before saving |
+| Saving with `draft: false` | Always `draft: true` — publishing is the user's call |
+| Guessing the thread when no link given | Ask first |
+| Writing to `posts/` or `til/` directly | Always `ai-drafted/` — that's what tags it `ai-drafted` and routes it to `content/posts/` on sync |
+| Opening paragraph narrates the source ("a thread turned into...") | State the subject and claim directly in sentence one instead |
+| Title/framing uses "Stop X, Start Y" or "It's not X, it's Y" (antithesis) | State the claim directly — this is a well-known LLM writing tic, not a hook |
+| Title reads as antithesis in a *different* wording than the two listed examples (e.g. "X, Not Y") | The rule is about the pattern, not the exact phrase — any title contrasting a claim with its explicit negation needs a full rewrite, not a synonym swap |
