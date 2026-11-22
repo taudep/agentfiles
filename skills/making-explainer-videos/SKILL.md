@@ -40,7 +40,10 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
 
 1. **Scaffold:** `<skill-dir>/scripts/new-video.sh <dir> [source.pdf]`. Copies the template,
    runs `npm install`, pre-downloads Remotion's headless Chrome. Use the user's scratch area unless told otherwise.
-2. **Read the whole source:** `npm run inspect -- --text`.
+2. **Read the user's style guide** if one exists: `$EXPLAINER_CONTENT_DIR/STYLE.md` (tone, voice,
+   pace and guardrails learned from past feedback). It overrides the defaults below. When the user
+   gives new style feedback, update that file in the same turn. Then **read the whole source**:
+   `npm run inspect -- --text` for PDFs; for other sources, save notes under `<project>/sources/`.
 3. **Write `scenes.json`:** replace the example's `scenes[]` entirely (it's a reference, see
    [reference.md](reference.md)); keep `voice`. One scene = one claim + one visual.
 4. **Find zoom targets:** `npm run inspect -- --page N --grid`, then Read
