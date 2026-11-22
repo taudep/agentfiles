@@ -20,6 +20,7 @@ Each skill lives in its own directory containing a `SKILL.md` (the instructions 
 |---|---|
 | [economist-style](skills/economist-style/SKILL.md) | Apply The Economist style guide to written content — detects weasel words, fillers, passive voice, and other style issues in markdown, HTML, or documentation. |
 | [hacker-news-thread-summary](skills/hacker-news-thread-summary/SKILL.md) | Writes a taude.xyz blog post from a Hacker News comments thread — synthesized by argument and edited with economist-style, saved as an `ai-drafted` draft. |
+| [making-explainer-videos](skills/making-explainer-videos/SKILL.md) | Paper/PDF → tight narrated vertical explainer video (YouTube Shorts style): Remotion template, ElevenLabs v4 voice with word-synced captions, camera zooms and highlights on the source's real quotes and figures. |
 | [python-cli](skills/python-cli/SKILL.md) | Opinionated guide for building Python CLI programs — `uv` for packages, `click`/`rich`/`textual` for CLI/TUI, XDG config conventions, single-file scripts with PEP 723 inline dependencies. |
 | [taude](skills/taude/SKILL.md) | Maintains a personal LLM wiki inside an Obsidian vault — ingests articles archivore scrapes daily into synthesized, cross-referenced topic pages. |
 | [ux-review-laws-of-ux](skills/ux-review-laws-of-ux/SKILL.md) | Reviews UI/UX designs (artifacts, prototypes, screenshots) against the 30 laws from [lawsofux.com](https://lawsofux.com/), grouped into seven review lenses, with a ranked findings table. |
