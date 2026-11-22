@@ -81,6 +81,7 @@ music) go in `public/` and load with `staticFile()`.
 | `npm run studio` | live preview at localhost:3000 |
 | `npm run render` | out/short.mp4 (add `--crf=14` via npx for higher quality) |
 | `npm run srt` | out/captions.srt |
+| `scripts/content-sync.sh push\|pull <project>` | save/restore content in `$EXPLAINER_CONTENT_DIR/<project>/` |
 | `scripts/contact-sheet.sh [pos] [cols]` | out/frames/contact-<pos>.png: one frame per scene at `pos` (0–1) |
 | `npx remotion still Short out/f.png --frame=N --scale=0.33` | spot-check one frame in seconds |
 | `npx remotion still Short out/thumb.png --frame=30` | thumbnail |

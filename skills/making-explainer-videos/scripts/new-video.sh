@@ -38,5 +38,6 @@ for attempt in 1 2 3; do
   [ "$attempt" = 3 ] && echo "warning: no headless Chrome yet; first render will retry the download" >&2
 done
 echo "ready: $target"
+echo "resuming an existing video? from inside $target: scripts/content-sync.sh pull <project-name>"
 echo "next (from inside $target): read the source with npm run inspect -- --text, replace scenes[] in scenes.json,"
 echo "      then: npm run paper && npm run narrate -- --provider say && npm run render && scripts/contact-sheet.sh"

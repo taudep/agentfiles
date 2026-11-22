@@ -21,6 +21,17 @@ scenes.json ─► extract_paper.py ─► page PNGs + zoom rects (src/generated
 Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything else
 (`npm run …`, `scripts/contact-sheet.sh`) runs **from inside the new project**.
 
+## Where things live
+
+- **Code:** a disposable working copy scaffolded from `template/` (the user's scratch area).
+- **Content:** one folder per video under **`$EXPLAINER_CONTENT_DIR/<project>/`**, the user's
+  durable, synced store. It holds scenes.json, the source PDF, social/, youtube/, the paid audio and
+  the approved upload kit. `scripts/content-sync.sh push <project>` after every approved change;
+  `scripts/content-sync.sh pull <project>` to resume on any machine. Pulled audio means
+  re-rendering costs nothing; confirm with `npm run narrate -- --dry-run`.
+- If `$EXPLAINER_CONTENT_DIR` is unset, ask the user where content should live. Never put
+  content (PDF, voice audio, voice ID, scripts) in the skill's repo; it's public.
+
 ## Workflow
 
 1. **Scaffold:** `<skill-dir>/scripts/new-video.sh <dir> [source.pdf]`. Copies the template,
@@ -44,7 +55,8 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
    each built from a line the video actually says), plus a TikTok caption, an Instagram Reel
    caption and a YouTube title. Export the cover with `npx remotion still Short out/cover.png --frame=N`
    (pick the hook's most legible frame). Fill `youtube/metadata.md` from `metadata.example.md`.
-9. **Publish:** the same mp4 works on all three platforms.
+9. **Save content:** `scripts/content-sync.sh push <project>` (and after any later re-voice or re-render).
+10. **Publish:** the same mp4 works on all three platforms.
    - **YouTube:** upload in Studio with the srt.
    - **TikTok:** upload manually. Content Posting API posts from unaudited apps are **private-only**.
    - **Instagram:** upload manually, or use the Graph API (`media_type=REELS`, then `media_publish`).
