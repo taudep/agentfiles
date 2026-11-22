@@ -52,7 +52,7 @@ description: Use this skill when the user wants to create a python CLI program. 
     - All testing artifacts go in /tests
 
   6. Creating Installers
-    - refernce the file @python-cli-installable.md on how to make the python CLI installable to the users system.  However, if it's a single python script you're writing using PEP 723, ask the user if they just want to install it into folder in their PATH (default ~/dev/tools/scripts, but ask the user and then remember what they say to MEMORY).
+    - refernce the file @python-cli-installable.md on how to make the python CLI installable to the users system.  However, if it's a single python script you're writing using PEP 723, ask the user if they just want to install it into folder in their PATH (default: the scripts folder named in the user's CLAUDE.md, else ~/dev/scripts; ask the user and then remember what they say to MEMORY).
 
   - For commits fixing bugs or adding features based on user reports add:
     ```bash
