@@ -7,7 +7,7 @@
       "voice_id": "YOUR_VOICE_ID",
       "model_id": "eleven_v4",
       "voice_settings": {
-        "stability": 0.55,
+        "stability": 0.3,
         "similarity_boost": 0.8
       }
     },
@@ -29,6 +29,9 @@
         "sub": "…and the LLM OS kernel just moved onto your desk.",
         "subCue": "karpathy",
         "footnote": "Gap measured by Epoch AI, May 2026"
+      },
+      "voice_settings": {
+        "stability": 0.55
       }
     },
     {
@@ -303,6 +306,9 @@
         "end": "It answers anyway.",
         "endCue": "anyway",
         "footnote": "Paper + commands in the description"
+      },
+      "voice_settings": {
+        "stability": 0.55
       }
     }
   ]

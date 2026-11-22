@@ -9,6 +9,7 @@
  *   node scripts/narrate.mjs --force         # regenerate even if text is unchanged
  *   node scripts/narrate.mjs --only s3-thesis
  *   node scripts/narrate.mjs --preview s01-hook   # audition one scene, leaves the video untouched
+ *   node scripts/narrate.mjs --dry-run            # list which scenes would call (and bill) the API
  *
  * API key lookup (never printed, never written to disk):
  *   1. $ELEVENLABS_API_KEY
@@ -122,7 +123,7 @@ function estimateWords(text, dur) {
   });
 }
 
-async function synthElevenLabs(scene, prevText, nextText, mp3) {
+async function synthElevenLabs(scene, voiceSettings, prevText, nextText, mp3) {
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`;
   const post = (body) =>
     fetch(url, {
@@ -133,7 +134,7 @@ async function synthElevenLabs(scene, prevText, nextText, mp3) {
   const full = {
     text: scene.narration,
     model_id: el.model_id,
-    voice_settings: el.voice_settings,
+    voice_settings: voiceSettings,
     // neighbouring text keeps intonation continuous across separately generated scenes
     previous_text: prevText,
     next_text: nextText,
@@ -188,7 +189,13 @@ const previewId = opt('preview');
 for (let i = 0; i < scenes.length; i++) {
   const scene = scenes[i];
   if (previewId && scene.id !== previewId) continue;
-  const settings = provider === 'elevenlabs' ? {voiceId, ...el} : spec.voice.say;
+  // a scene may override voice settings, e.g. a steadier intro: "voice_settings": {"stability": 0.55}
+  const settings =
+    provider === 'elevenlabs'
+      ? scene.voice_settings
+        ? {voiceId, ...el, voice_settings: {...el.voice_settings, ...scene.voice_settings}}
+        : {voiceId, ...el}
+      : spec.voice.say;
   // The cache key covers only what ElevenLabs bills for. Speed is applied locally afterwards,
   // so changing voice.speed never re-buys audio.
   const hash = hashOf({provider, settings, text: scene.narration});
@@ -196,6 +203,12 @@ for (let i = 0; i < scenes.length; i++) {
   const rawMeta = path.join(audioDir, `${scene.id}-${hash}.raw.json`);
   const outName = `${scene.id}-${hash}-x${speed}.mp3`;
   const outMp3 = path.join(audioDir, outName);
+
+  if (flag('dry-run')) {
+    const hit = fs.existsSync(rawMeta) && fs.existsSync(rawMp3) && !flag('force');
+    console.log(`  ${hit ? 'cached  ' : 'WOULD CALL API'} ${scene.id} (${scene.narration.length} chars)`);
+    continue;
+  }
 
   let rawWords;
   if (fs.existsSync(rawMeta) && fs.existsSync(rawMp3) && !flag('force')) {
@@ -211,7 +224,7 @@ for (let i = 0; i < scenes.length; i++) {
   } else {
     rawWords =
       provider === 'elevenlabs'
-        ? await synthElevenLabs(scene, scenes[i - 1]?.narration, scenes[i + 1]?.narration, rawMp3)
+        ? await synthElevenLabs(scene, settings.voice_settings, scenes[i - 1]?.narration, scenes[i + 1]?.narration, rawMp3)
         : synthSay(scene, rawMp3);
     // lone dashes etc. are pauses, not caption words
     rawWords = rawWords.filter((w) => /[\p{L}\p{N}]/u.test(w.text));
@@ -260,6 +273,8 @@ function adoptLegacy(scene, settings, legacySpeed, rawMp3, rawMeta) {
   fs.writeFileSync(rawMeta, JSON.stringify({hash: 'adopted', words}, null, 2));
   return true;
 }
+
+if (flag('dry-run')) process.exit(0);
 
 const timeline = {fps: FPS, width: WIDTH, height: HEIGHT, totalFrames: startFrame, scenes: timelineScenes};
 fs.writeFileSync(path.join(ROOT, 'src', 'generated', 'timeline.json'), JSON.stringify(timeline, null, 2));

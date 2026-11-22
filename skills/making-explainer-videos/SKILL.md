@@ -64,14 +64,15 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
   four-B"), acronyms that TTS mangles ("Q4 K M"). Captions show the spoken form.
 - **Tone: a knowledgeable colleague explaining, not a pitch.** Energy comes from short sentences
   and concrete numbers, not hype. No audio tags by default. Hype words ("brutal", "crank",
-  "insane", "game-changer") plus `[excited]` read as an overselling salesperson. Add a tag only if
-  the user asks for more energy, and never `[rushed]` on top of `speed`.
+  "insane", "game-changer") plus `[excited]` read as an overselling salesperson. Don't tag the
+  intro or outro: that's where `[excited]` sounded most overdone. Add a tag only if the user asks
+  for more energy, and never `[rushed]` on top of `speed`.
 
 ## Voice and secrets
 
 - ElevenLabs model `eleven_v4`: only `stability` + `similarity_boost` (no speed/style/SSML).
-  **Stability 0.55 is the default** (steady, conversational). Lower toward 0.3 only if the user
-  asks for more energy; 0.3 with tags sounded salesy.
+  **Defaults:** body scenes at stability 0.3 (lively but natural). Hook and CTA get a per-scene
+  override, `"voice_settings": {"stability": 0.55}`, for a steadier open and close.
 - **Pace = `voice.speed`** in scenes.json: 1.0 is the voice's natural pace (default); 0.9 slower,
   1.1 tighter. 1.2 felt too fast with a cloned voice. Applied locally with pitch-safe ffmpeg
   `atempo`; raw audio is cached separately, so **changing speed never re-bills ElevenLabs**.
@@ -83,6 +84,8 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
 - Audio is cached per scene by hash. To audition a voice/setting change, run
   `npm run narrate -- --preview <scene-id>` (one scene → `out/preview-<id>.mp3`, video untouched),
   get the user's OK, then run the full narrate. The preview's audio is reused, so it's never billed twice.
+  Run `npm run narrate -- --dry-run` before any full narrate after a settings change: it lists which
+  scenes would call (and bill) the API. Change settings per scene, not globally, when only some scenes need it.
 
 ## PaperZoom framing
 

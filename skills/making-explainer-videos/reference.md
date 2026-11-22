@@ -11,10 +11,11 @@
   "voice": {
     "speed": 1.0,                         // pitch-safe atempo after synthesis; 1 = natural, free to change
     "elevenlabs": {"voice_id": "…", "model_id": "eleven_v4",
-                   "voice_settings": {"stability": 0.55, "similarity_boost": 0.8}},
+                   "voice_settings": {"stability": 0.3, "similarity_boost": 0.8}},
     "say": {"voice": "Samantha", "rate": 205}   // free draft voice
   },
-  "scenes": [ {"id": "s01-hook", "type": "BigNumber", "narration": "…", "props": {…}} ]
+  "scenes": [ {"id": "s01-hook", "type": "BigNumber", "narration": "…", "props": {…},
+               "voice_settings": {"stability": 0.55}} ]   // optional per-scene override
 }
 ```
 
@@ -76,6 +77,7 @@ music) go in `public/` and load with `staticFile()`.
 | `npm run paper` | render PDF pages, resolve PaperZoom targets |
 | `npm run narrate [-- --provider say\|--force\|--only ID]` | audio + timeline |
 | `npm run narrate -- --preview ID` | audition one scene → out/preview-ID.mp3 (video untouched) |
+| `npm run narrate -- --dry-run` | list which scenes would call (bill) ElevenLabs |
 | `npm run studio` | live preview at localhost:3000 |
 | `npm run render` | out/short.mp4 (add `--crf=14` via npx for higher quality) |
 | `npm run srt` | out/captions.srt |
