@@ -71,8 +71,10 @@ Two script locations: `<skill-dir>/scripts/new-video.sh` scaffolds; everything e
 ## Voice and secrets
 
 - ElevenLabs model `eleven_v4`: only `stability` + `similarity_boost` (no speed/style/SSML).
-  **Defaults:** body scenes at stability 0.3 (lively but natural). Hook and CTA get a per-scene
-  override, `"voice_settings": {"stability": 0.55}`, for a steadier open and close.
+  **Defaults (user-approved):** stability 0.3 with no tags for the body *and* the hook (lively, not
+  salesy; 0.55 made the hook too flat). The CTA gets a steadier per-scene override,
+  `"voice_settings": {"stability": 0.55}`. When the user wants a middle ground, generate 2–3
+  `--preview` variants (e.g. 0.3 / 0.42 / 0.55) and let them pick by ear; takes vary run to run.
 - **Pace = `voice.speed`** in scenes.json: 1.0 is the voice's natural pace (default); 0.9 slower,
   1.1 tighter. 1.2 felt too fast with a cloned voice. Applied locally with pitch-safe ffmpeg
   `atempo`; raw audio is cached separately, so **changing speed never re-bills ElevenLabs**.

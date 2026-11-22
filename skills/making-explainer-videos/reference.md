@@ -14,7 +14,7 @@
                    "voice_settings": {"stability": 0.3, "similarity_boost": 0.8}},
     "say": {"voice": "Samantha", "rate": 205}   // free draft voice
   },
-  "scenes": [ {"id": "s01-hook", "type": "BigNumber", "narration": "…", "props": {…},
+  "scenes": [ {"id": "s12-cta", "type": "CTA", "narration": "…", "props": {…},
                "voice_settings": {"stability": 0.55}} ]   // optional per-scene override
 }
 ```
